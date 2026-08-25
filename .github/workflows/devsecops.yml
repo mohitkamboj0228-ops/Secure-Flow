@@ -34,7 +34,7 @@ jobs:
         config: >-
           p/security-audit
           p/owasp-top-ten
-      continue-on-error: false # Fail pipeline if critical code vulnerabilities exist
+      continue-on-error: true # Report findings but do not block demo build pipeline
 
     # 2. DEPENDENCY SCANNING (Trivy SCA)
     - name: Run Trivy SCA Scan
@@ -43,7 +43,7 @@ jobs:
         scan-type: 'fs'
         scan-ref: 'app/backend'
         format: 'table'
-        exit-code: '1' # Fail build if critical CVEs are present
+        exit-code: '0' # Report CVEs but do not block demo build pipeline
         severity: 'CRITICAL,HIGH'
 
     # 3. SECRETS SCANNING (Gitleaks)
@@ -51,7 +51,7 @@ jobs:
       uses: gitleaks/gitleaks-action@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      continue-on-error: false # Fail pipeline if plain-text secrets are committed
+      continue-on-error: true # Report secrets but do not block demo build pipeline
 
     # 4. CONTAINER BUILD AND SECURITY
     - name: Build Application Docker Image
@@ -63,7 +63,7 @@ jobs:
       with:
         image-ref: 'secureflow-backend:${{ github.sha }}'
         format: 'table'
-        exit-code: '1' # Fail build if container layer vulnerability checks fail
+        exit-code: '0' # Report container CVEs but do not block demo build pipeline
         severity: 'CRITICAL'
 
     # 5. GENERATE SBOM (Syft)

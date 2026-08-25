@@ -24,14 +24,21 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Create Clean Static Web Directory
+        run: |
+          mkdir public_html
+          cp index.html public_html/
+          cp styles.css public_html/
+          cp app.js public_html/
+
       - name: Setup GitHub Pages Configurations
         uses: actions/configure-pages@v4
 
       - name: Upload Static Web Assets
         uses: actions/upload-pages-artifact@v3
         with:
-          # Deploy the root directory files (index.html, styles.css, app.js)
-          path: '.'
+          # Only deploy the clean public_html folder
+          path: './public_html'
 
       - name: Deploy static assets to Pages
         id: deployment
