@@ -1,0 +1,111 @@
+---
+- name: SecureFlow DevSecOps Baseline Harden
+  hosts: all
+  become: true
+  vars:
+    node_exporter_version: "1.7.0"
+  
+  tasks:
+    # 1. UPGRADE PACKAGES AND INSTALL PREREQS
+    - name: Ensure baseline tools are present
+      apt:
+        name:
+          - curl
+          - gnupg
+          - apt-transport-https
+          - ca-certificates
+          - ufw
+        state: present
+        update_cache: true
+
+    # 2. FIREWALL HARDENING
+    - name: Configure strict local UFW rules
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '22'
+        - '80'
+        - '443'
+        - '8080' # Frontend
+        - '5000' # Backend API
+
+    - name: Enable UFW service
+      ufw:
+        state: enabled
+        policy: deny
+
+    # 3. SSH HARDENING
+    - name: Disable password auth for SSH access
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+      notify: restart_sshd
+
+    - name: Restrict SSH root logins
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PermitRootLogin'
+        line: 'PermitRootLogin no'
+      notify: restart_sshd
+
+    # 4. MONITORING AGENT (Node Exporter)
+    - name: Check if NodeExporter is installed
+      stat:
+        path: /usr/local/bin/node_exporter
+      register: node_exporter_bin
+
+    - name: Install Node Exporter agent binary
+      block:
+        - name: Download NodeExporter release tarball
+          get_url:
+            url: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+            dest: "/tmp/node_exporter.tar.gz"
+            mode: '0640'
+
+        - name: Extract archive source files
+          unarchive:
+            src: "/tmp/node_exporter.tar.gz"
+            dest: "/tmp"
+            remote_src: true
+
+        - name: Move binary file to bin directory
+          copy:
+            src: "/tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
+            dest: "/usr/local/bin/node_exporter"
+            mode: '0755'
+            remote_src: true
+
+        - name: Configure Systemd script service configurations
+          copy:
+            dest: /etc/systemd/system/node_exporter.service
+            content: |
+              [Unit]
+              Description=Prometheus Node Exporter
+              Wants=network-online.target
+              After=network-online.target
+
+              [Service]
+              User=nobody
+              ExecStart=/usr/local/bin/node_exporter
+              Restart=always
+
+              [Install]
+              WantedBy=multi-user.target
+            mode: '0644'
+
+        - name: Enable and launch NodeExporter
+          systemd:
+            name: node_exporter
+            state: started
+            enabled: true
+            daemon_reload: true
+      when: not node_exporter_bin.stat.exists
+
+  handlers:
+    - name: restart_sshd
+      service:
+        name: sshd
+        state: restarted

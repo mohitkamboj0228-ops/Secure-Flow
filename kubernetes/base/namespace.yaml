@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secureflow
+  labels:
+    name: secureflow
+    security-zone: backend

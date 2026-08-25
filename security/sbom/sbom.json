@@ -1,0 +1,67 @@
+{
+  "packages": [
+    {
+      "name": "cors",
+      "version": "2.8.5",
+      "type": "npm",
+      "license": "MIT",
+      "vulnerabilities": []
+    },
+    {
+      "name": "express",
+      "version": "4.19.2",
+      "type": "npm",
+      "license": "MIT",
+      "vulnerabilities": []
+    },
+    {
+      "name": "pg",
+      "version": "8.12.0",
+      "type": "npm",
+      "license": "MIT",
+      "vulnerabilities": []
+    },
+    {
+      "name": "prom-client",
+      "version": "15.1.2",
+      "type": "npm",
+      "license": "MIT",
+      "vulnerabilities": []
+    },
+    {
+      "name": "sqlite3",
+      "version": "5.1.7",
+      "type": "npm",
+      "license": "MIT",
+      "vulnerabilities": []
+    },
+    {
+      "name": "alpine-baselayout",
+      "version": "3.4.3-r0",
+      "type": "apk",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "name": "busybox",
+      "version": "1.36.1-r15",
+      "type": "apk",
+      "license": "GPL-2.0-only"
+    },
+    {
+      "name": "musl",
+      "version": "1.2.4-r2",
+      "type": "apk",
+      "license": "MIT"
+    },
+    {
+      "name": "ssl_client",
+      "version": "1.36.1-r15",
+      "type": "apk",
+      "license": "GPL-2.0-only"
+    }
+  ],
+  "metadata": {
+    "generated_by": "Syft (Local Simulator fallback)",
+    "timestamp": "2026-08-25T11:06:55.906Z"
+  }
+}

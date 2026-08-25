@@ -1,0 +1,9 @@
+{
+  "findings": [],
+  "errors": [],
+  "scan_meta": {
+    "total_rules": 32,
+    "files_scanned": 8,
+    "timestamp": "2026-08-25T11:06:55.573Z"
+  }
+}

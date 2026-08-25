@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureFlow - DevSecOps Control Center</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+    <!-- Mesh Background Gradients -->
+    <div class="mesh-gradient"></div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="app-layout">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-shield">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="logo-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                    </svg>
+                </div>
+                <div class="brand-info">
+                    <h1>SecureFlow</h1>
+                    <span class="version">DevSecOps v1.0.0</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" id="btn-overview" onclick="switchNav('overview')">
+                    <span class="icon">📊</span> Overview
+                </button>
+                <button class="nav-btn" id="btn-pipelines" onclick="switchNav('pipelines')">
+                    <span class="icon">⛓️</span> Pipelines
+                </button>
+                
+                <!-- Security Accordion -->
+                <button class="nav-btn" id="btn-security" onclick="toggleSubmenu('sub-security')">
+                    <span class="icon">🛡️</span> Security Scans ▾
+                </button>
+                <div class="nav-sub" id="sub-security">
+                    <button class="sub-btn" id="btn-sec-sast" onclick="switchNav('security', 'semgrep')">SAST Code Check</button>
+                    <button class="sub-btn" id="btn-sec-deps" onclick="switchNav('security', 'trivy_sca')">Dependency CVEs</button>
+                    <button class="sub-btn" id="btn-sec-secrets" onclick="switchNav('security', 'gitleaks')">Secrets Audits</button>
+                    <button class="sub-btn" id="btn-sec-sbom" onclick="switchNav('sbom')">CycloneDX SBOM</button>
+                </div>
+
+                <!-- Kubernetes Accordion -->
+                <button class="nav-btn" id="btn-k8s" onclick="toggleSubmenu('sub-k8s')">
+                    <span class="icon">☸️</span> Kubernetes ▾
+                </button>
+                <div class="nav-sub" id="sub-k8s">
+                    <button class="sub-btn" id="btn-k8s-workloads" onclick="switchNav('kubernetes', 'workloads')">Pods & Workloads</button>
+                    <button class="sub-btn" id="btn-k8s-policies" onclick="switchNav('kubernetes', 'policies')">Kyverno Policies</button>
+                </div>
+
+                <!-- Observability Accordion -->
+                <button class="nav-btn" id="btn-observability" onclick="toggleSubmenu('sub-observability')">
+                    <span class="icon">📈</span> Observability ▾
+                </button>
+                <div class="nav-sub" id="sub-observability">
+                    <button class="sub-btn" id="btn-obs-metrics" onclick="switchNav('observability', 'metrics')">Telemetry Charts</button>
+                    <button class="sub-btn" id="btn-obs-logs" onclick="switchNav('observability', 'logs')">Audit Logs</button>
+                </div>
+
+                <button class="nav-btn" id="btn-demo" onclick="switchNav('demo')">
+                    <span class="icon">🚨</span> Incidents & Demo
+                </button>
+                <button class="nav-btn" id="btn-ai-assistant" onclick="switchNav('ai-assistant')">
+                    <span class="icon">🤖</span> AI Assistant
+                </button>
+                <button class="nav-btn" id="btn-architecture" onclick="switchNav('architecture')">
+                    <span class="icon">🏗️</span> Architecture
+                </button>
+                <button class="nav-btn" id="btn-documentation" onclick="switchNav('documentation')">
+                    <span class="icon">📄</span> Documentation
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="server-status">
+                    <div class="status-indicator success" id="conn-indicator"></div>
+                    <span id="conn-text">Checking connection...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            
+            <!-- HEADER -->
+            <header class="header">
+                <div class="header-title-area">
+                    <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+                    <h2 id="current-tab-title">Platform Overview</h2>
+                    <p class="tab-subtitle" id="current-tab-subtitle">Observe, audit, and remediate the cloud-native software supply chain.</p>
+                </div>
+                <div class="header-actions">
+                    <span class="compliance-badge" id="security-badge">
+                        🔒 DevSecOps Score: --
+                    </span>
+                    <button class="btn btn-primary" onclick="triggerManualScan()">
+                        ⚡ Run Security Pipeline
+                    </button>
+                </div>
+            </header>
+
+            <!-- TABS WRAPPER -->
+            <div class="tab-content">
+
+                <!-- 1. OVERVIEW TAB -->
+                <section id="tab-overview" class="tab-pane active">
+                    <!-- Key metrics row -->
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <span class="card-label">Security Compliance Score</span>
+                            <div class="metric-value-container">
+                                <span class="metric-value font-outfit text-accent" id="sec-score-val">100</span>
+                                <span class="metric-unit">/ 100</span>
+                            </div>
+                            <p class="card-desc" id="sec-score-desc">Calculated based on real code checks, secrets, and policy compliance.</p>
+                        </div>
+                        <div class="metric-card">
+                            <span class="card-label">Kubernetes Cluster Health</span>
+                            <div class="metric-value-container">
+                                <span class="metric-value font-outfit text-green" id="k8s-health-val">3 / 3</span>
+                            </div>
+                            <p class="card-desc">Healthy replicas running on Docker-Desktop Kubernetes context.</p>
+                        </div>
+                        <div class="metric-card">
+                            <span class="card-label">Supply Chain Integrity</span>
+                            <div class="metric-value-container">
+                                <span class="metric-value font-outfit text-blue" id="supply-chain-val">Signed</span>
+                            </div>
+                            <p class="card-desc">Docker images signed via Cosign key pair validation.</p>
+                        </div>
+                        <div class="metric-card">
+                            <span class="card-label">Active Platform Incidents</span>
+                            <div class="metric-value-container">
+                                <span class="metric-value font-outfit text-red" id="active-incidents-val">0</span>
+                            </div>
+                            <p class="card-desc" id="incidents-desc">Alerts waiting for review or remediation.</p>
+                        </div>
+                    </div>
+
+                    <!-- Layout splits -->
+                    <div class="split-layout">
+                        <!-- Left pane: Security audit checklist -->
+                        <div class="content-card">
+                            <h3>Security Score Breakdown</h3>
+                            <div class="audit-checklist" id="security-breakdown-list">
+                                <div class="skeleton skeleton-card" style="margin-bottom:8px;"></div>
+                                <div class="skeleton skeleton-card" style="margin-bottom:8px;"></div>
+                                <div class="skeleton skeleton-card"></div>
+                            </div>
+                        </div>
+
+                        <!-- Right pane: DORA metrics and audit logs -->
+                        <div class="content-card">
+                            <h3>Engineering DORA Metrics</h3>
+                            <div class="dora-grid">
+                                <div class="dora-item">
+                                    <span class="dora-label">Deployment Frequency</span>
+                                    <span class="dora-value">Multiple times / Day</span>
+                                </div>
+                                <div class="dora-item">
+                                    <span class="dora-label">Lead Time for Changes</span>
+                                    <span class="dora-value">&lt; 15 Mins</span>
+                                </div>
+                                <div class="dora-item">
+                                    <span class="dora-label">Change Failure Rate</span>
+                                    <span class="dora-value" id="dora-failure-rate">0%</span>
+                                </div>
+                                <div class="dora-item">
+                                    <span class="dora-label">Mean Time to Recovery</span>
+                                    <span class="dora-value" id="dora-mttr">&lt; 2 Mins</span>
+                                </div>
+                            </div>
+                            <h3 style="margin-top: 24px;">Live System Audit Trail</h3>
+                            <div class="terminal-body" style="height: 160px; font-size: 13px;" id="audit-trail-terminal">
+                                <div class="terminal-line">[SYSTEM] Fetching audit trail...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. PIPELINES TAB -->
+                <section id="tab-pipelines" class="tab-pane">
+                    <div class="pipeline-header-card">
+                        <p>Interact with the security-injected pipeline stages below. Click on any pipeline component to inspect its purpose, integrated technologies, and secure vs insecure implementation analysis.</p>
+                    </div>
+
+                    <!-- Flow Chart -->
+                    <div class="pipeline-flow-container">
+                        <div class="pipeline-nodes">
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" onclick="inspectPipelineStage('checkout')">
+                                    <span class="node-icon">📥</span>
+                                    <span class="node-name">Checkout</span>
+                                </button>
+                                <div class="node-status text-green">PASS</div>
+                            </div>
+                            <div class="flow-line"></div>
+                            
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" id="node-sast" onclick="inspectPipelineStage('sast')">
+                                    <span class="node-icon">🔍</span>
+                                    <span class="node-name">Semgrep SAST</span>
+                                </button>
+                                <div class="node-status text-green" id="sast-node-status">PASS</div>
+                            </div>
+                            <div class="flow-line"></div>
+
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" id="node-sca" onclick="inspectPipelineStage('sca')">
+                                    <span class="node-icon">📦</span>
+                                    <span class="node-name">Trivy Dependency</span>
+                                </button>
+                                <div class="node-status text-green" id="sca-node-status">PASS</div>
+                            </div>
+                            <div class="flow-line"></div>
+
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" id="node-secrets" onclick="inspectPipelineStage('secrets')">
+                                    <span class="node-icon">🔑</span>
+                                    <span class="node-name">Gitleaks Secrets</span>
+                                </button>
+                                <div class="node-status text-green" id="secrets-node-status">PASS</div>
+                            </div>
+                            <div class="flow-line"></div>
+
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" onclick="inspectPipelineStage('build')">
+                                    <span class="node-icon">🐳</span>
+                                    <span class="node-name">Docker Build</span>
+                                </button>
+                                <div class="node-status text-green">PASS</div>
+                            </div>
+                            <div class="flow-line"></div>
+
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" id="node-cscan" onclick="inspectPipelineStage('cscan')">
+                                    <span class="node-icon">🛡️</span>
+                                    <span class="node-name">Trivy Image Scan</span>
+                                </button>
+                                <div class="node-status text-green" id="cscan-node-status">PASS</div>
+                            </div>
+                            <div class="flow-line"></div>
+
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" id="node-sbom" onclick="inspectPipelineStage('sbom')">
+                                    <span class="node-icon">📄</span>
+                                    <span class="node-name">Syft SBOM</span>
+                                </button>
+                                <div class="node-status text-green" id="sbom-node-status">PASS</div>
+                            </div>
+                            <div class="flow-line"></div>
+
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" id="node-sign" onclick="inspectPipelineStage('sign')">
+                                    <span class="node-icon">🖋️</span>
+                                    <span class="node-name">Cosign Sign</span>
+                                </button>
+                                <div class="node-status text-green" id="sign-node-status">PASS</div>
+                            </div>
+                            <div class="flow-line"></div>
+
+                            <div class="node-wrapper">
+                                <button class="pipeline-node success" id="node-k8s" onclick="inspectPipelineStage('k8s')">
+                                    <span class="node-icon">☸️</span>
+                                    <span class="node-name">K8s Deployment</span>
+                                </button>
+                                <div class="node-status text-green" id="k8s-node-status">PASS</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pipeline Stage Details Card -->
+                    <div class="content-card" id="pipeline-inspection-card">
+                        <div class="card-placeholder">
+                            <span class="icon large">ℹ️</span>
+                            <h3>Click on any pipeline node above to inspect details</h3>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. SECURITY TAB -->
+                <section id="tab-security" class="tab-pane">
+                    <div class="split-layout">
+                        <!-- Scanners list -->
+                        <div class="content-card" style="flex: 1;">
+                            <h3>Security Findings By Tool</h3>
+                            <div class="tool-list">
+                                <div class="tool-card active" id="card-semgrep" onclick="switchScannerView('semgrep')">
+                                    <div class="tool-info">
+                                        <h4>Semgrep SAST</h4>
+                                        <span class="tool-meta">Source code code-checks</span>
+                                    </div>
+                                    <span class="badge" id="semgrep-vuln-badge">0 Issues</span>
+                                </div>
+                                <div class="tool-card" id="card-trivy_sca" onclick="switchScannerView('trivy_sca')">
+                                    <div class="tool-info">
+                                        <h4>Trivy Dependency Scan</h4>
+                                        <span class="tool-meta">Open-source package CVEs</span>
+                                    </div>
+                                    <span class="badge" id="trivy-sca-vuln-badge">0 Issues</span>
+                                </div>
+                                <div class="tool-card" id="card-gitleaks" onclick="switchScannerView('gitleaks')">
+                                    <div class="tool-info">
+                                        <h4>Gitleaks Secrets Scan</h4>
+                                        <span class="tool-meta">Credentials leakage check</span>
+                                    </div>
+                                    <span class="badge" id="gitleaks-vuln-badge">0 Issues</span>
+                                </div>
+                                <div class="tool-card" id="card-trivy_container" onclick="switchScannerView('trivy_container')">
+                                    <div class="tool-info">
+                                        <h4>Trivy Container Scan</h4>
+                                        <span class="tool-meta">OS layer vulnerabilities</span>
+                                    </div>
+                                    <span class="badge" id="trivy-container-vuln-badge">0 Issues</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Findings Output Pane -->
+                        <div class="content-card" style="flex: 2;">
+                            <div class="header-flex">
+                                <h3 id="scanner-output-title">Semgrep SAST Report Output</h3>
+                                <span class="badge status-badge success" id="scanner-gate-status">Gate: Pass</span>
+                            </div>
+                            <div class="findings-output" id="scanner-findings-list">
+                                <div class="loading">Select a scanner to view findings details.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. SBOM TAB -->
+                <section id="tab-sbom" class="tab-pane">
+                    <div class="content-card">
+                        <div class="header-flex">
+                            <h3>Software Bill of Materials (SBOM) - CycloneDX</h3>
+                            <span class="badge file-badge font-mono" id="sbom-meta">0 Packages</span>
+                        </div>
+                        <p class="tab-subtitle">SecureFlow platform dependencies catalogued via Syft container scan. Ensures license compliance and inventory auditing.</p>
+                        
+                        <div class="search-bar-container">
+                            <input type="text" id="sbom-search" placeholder="Search packages, licenses, or versions..." onkeyup="filterSbom()">
+                        </div>
+
+                        <div class="table-container">
+                            <table class="data-table" id="sbom-table">
+                                <thead>
+                                    <tr>
+                                        <th>Package Name</th>
+                                        <th>Version</th>
+                                        <th>License</th>
+                                        <th>Type</th>
+                                        <th>Vulnerability Risk</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sbom-rows">
+                                    <tr>
+                                        <td colspan="5" class="loading">Loading SBOM dependencies catalog...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. KUBERNETES TAB -->
+                <section id="tab-kubernetes" class="tab-pane">
+                    <div class="split-layout">
+                        <!-- Pod list and resources -->
+                        <div class="content-card" style="flex: 2;" id="k8s-workloads-view">
+                            <h3>Cluster Pods Status</h3>
+                            <div class="table-container">
+                                <table class="data-table" id="k8s-pod-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Pod Name</th>
+                                            <th>Status</th>
+                                            <th>Restarts</th>
+                                            <th>CPU</th>
+                                            <th>Memory</th>
+                                            <th>Security Context</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="k8s-pod-rows">
+                                        <tr>
+                                            <td colspan="6" class="loading">Loading active cluster workloads...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="content-card" style="flex: 2; display:none;" id="k8s-policies-view">
+                            <h3>Kyverno Policies Verification</h3>
+                            <div class="policy-grid" id="k8s-policies-list">
+                                <!-- Policy checklist cards -->
+                            </div>
+                        </div>
+
+                        <!-- K8s network and security model overview -->
+                        <div class="content-card" style="flex: 1;">
+                            <h3>Network Policy Traffic Model</h3>
+                            <div class="network-viz">
+                                <div class="net-node public">
+                                    <span>🌐 Public Ingress</span>
+                                </div>
+                                <div class="net-arrow down success"><span>Allow</span></div>
+                                <div class="net-node frontend">
+                                    <span>🖥️ Frontend Pods</span>
+                                </div>
+                                <div class="net-arrow down success"><span>Allow (Port 5000)</span></div>
+                                <div class="net-node backend">
+                                    <span>⚙️ Backend API Pods</span>
+                                </div>
+                                <div class="net-arrow down success"><span>Allow (Port 5432)</span></div>
+                                <div class="net-node database">
+                                    <span>🗄️ PostgreSQL DB</span>
+                                </div>
+                            </div>
+                            <div class="net-blockers">
+                                <div class="blocker-item fail">
+                                    ❌ Frontend Pods Direct &rarr; PostgreSQL (Denied)
+                                </div>
+                                <div class="blocker-item fail">
+                                    ❌ External Direct &rarr; PostgreSQL (Denied)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. OBSERVABILITY TAB -->
+                <section id="tab-observability" class="tab-pane">
+                    <div class="content-card" id="obs-metrics-view">
+                        <div class="header-flex">
+                            <h3>Ecosystem Observability Dashboards</h3>
+                            <span class="badge success-badge"><span class="pulse-dot"></span> Scraping Live Metrics</span>
+                        </div>
+                        <p class="tab-subtitle">Real-time HTTP performance logs scraped from <code>/api/metrics</code> and Docker Desktop node telemetry.</p>
+                        
+                        <div class="monitoring-grid">
+                            <!-- Latency Chart -->
+                            <div class="chart-container">
+                                <h4>HTTP Response Latency SLA</h4>
+                                <div class="mock-chart-visualizer">
+                                    <div class="bar-chart" id="latency-chart">
+                                        <!-- Bars generated dynamically -->
+                                    </div>
+                                </div>
+                                <div class="chart-legend">
+                                    <span>Average Response: <strong id="avg-latency-val">42ms</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Requests Rate Chart -->
+                            <div class="chart-container">
+                                <h4>HTTP Operations Rate (Reqs/Sec)</h4>
+                                <div class="mock-chart-visualizer">
+                                    <div class="line-chart" id="requests-chart">
+                                        <!-- Lines/Data generated dynamically -->
+                                    </div>
+                                </div>
+                                <div class="chart-legend">
+                                    <span>System status: <strong id="uptime-val">RUNNING</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Memory Usage Chart -->
+                            <div class="chart-container">
+                                <h4>Pod Memory Allocation</h4>
+                                <div class="mock-chart-visualizer">
+                                    <div class="donut-chart">
+                                        <div class="donut-segment segment-1" style="--val: 45;"></div>
+                                        <div class="donut-segment segment-2" style="--val: 110;"></div>
+                                        <div class="donut-segment segment-3" style="--val: 190;"></div>
+                                        <div class="donut-center">
+                                            <span>345 MiB</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="chart-legend">
+                                    <span style="color: #3b82f6;">■ Frontend</span>
+                                    <span style="color: #10b981;">■ Backend</span>
+                                    <span style="color: #ef4444;">■ Postgres</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="content-card" id="obs-logs-view" style="display:none;">
+                        <h3>Active Audit Logs stream</h3>
+                        <div class="terminal-body" style="height: 400px; font-size: 13px;" id="obs-audit-trail-terminal">
+                            <div class="terminal-line">[SYSTEM] Fetching audit trail...</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. DEMO / SIMULATION TAB -->
+                <section id="tab-demo" class="tab-pane">
+                    <div class="split-layout">
+                        <!-- Left pane: triggers -->
+                        <div class="content-card" style="flex: 1.5;">
+                            <h3>Demo & Chaos Control Panel</h3>
+                            <p class="tab-subtitle">Trigger physical file changes and scans to test security gates and observability alerts in real time.</p>
+                            
+                            <div class="demo-workflow-panel">
+                                <!-- Scenario 1 -->
+                                <div class="demo-step-flow">
+                                    <div class="demo-flow-info">
+                                        <h4>Scenario 1 - Vulnerable Dependency Gate</h4>
+                                        <p>Appends `lodash@4.17.4` to dependencies. The pipeline scan will block deployment due to prototype pollution vulnerabilities.</p>
+                                    </div>
+                                    <div class="demo-steps-indicator">
+                                        <div class="demo-dot active" id="step-vuln-1">1</div>
+                                        <div class="demo-line"></div>
+                                        <div class="demo-dot" id="step-vuln-2">2</div>
+                                        <div class="demo-line"></div>
+                                        <div class="demo-dot" id="step-vuln-3">3</div>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <button class="btn btn-warning" id="btn-inject-vuln" onclick="injectDemo('vulnerability')">Trigger Outage</button>
+                                        <button class="btn btn-primary" id="btn-fix-vuln" onclick="remediateDemo('vulnerability')" style="display:none;">Apply Remediation</button>
+                                    </div>
+                                </div>
+
+                                <!-- Scenario 2 -->
+                                <div class="demo-step-flow">
+                                    <div class="demo-flow-info">
+                                        <h4>Scenario 2 - Leaked API Secrets Check</h4>
+                                        <p>Appends a simulated plaintext AWS API access key inside code templates. The Gitleaks scan fails the build.</p>
+                                    </div>
+                                    <div class="demo-steps-indicator">
+                                        <div class="demo-dot active" id="step-sec-1">1</div>
+                                        <div class="demo-line"></div>
+                                        <div class="demo-dot" id="step-sec-2">2</div>
+                                        <div class="demo-line"></div>
+                                        <div class="demo-dot" id="step-sec-3">3</div>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <button class="btn btn-warning" id="btn-inject-sec" onclick="injectDemo('secret')">Trigger Outage</button>
+                                        <button class="btn btn-primary" id="btn-fix-sec" onclick="remediateDemo('secret')" style="display:none;">Apply Remediation</button>
+                                    </div>
+                                </div>
+
+                                <!-- Scenario 3 -->
+                                <div class="demo-step-flow">
+                                    <div class="demo-flow-info">
+                                        <h4>Scenario 3 - Kyverno Pod Policy Violation</h4>
+                                        <p>Attempts deployment of an unapproved root container with privileged user permissions. Webhook denies admission.</p>
+                                    </div>
+                                    <div class="demo-steps-indicator">
+                                        <div class="demo-dot active" id="step-pol-1">1</div>
+                                        <div class="demo-line"></div>
+                                        <div class="demo-dot" id="step-pol-2">2</div>
+                                        <div class="demo-line"></div>
+                                        <div class="demo-dot" id="step-pol-3">3</div>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <button class="btn btn-warning" id="btn-inject-pol" onclick="injectDemo('policy')">Trigger Outage</button>
+                                        <button class="btn btn-primary" id="btn-fix-pol" onclick="remediateDemo('policy')" style="display:none;">Apply Remediation</button>
+                                    </div>
+                                </div>
+
+                                <!-- Scenario 4 -->
+                                <div class="demo-step-flow">
+                                    <div class="demo-flow-info">
+                                        <h4>Scenario 4 - Service Blackout & Alert</h4>
+                                        <p>Simulates backend database connection failure, triggering Prometheus AlertManager latency SLAs and system metrics warnings.</p>
+                                    </div>
+                                    <div class="demo-steps-indicator">
+                                        <div class="demo-dot active" id="step-fail-1">1</div>
+                                        <div class="demo-line"></div>
+                                        <div class="demo-dot" id="step-fail-2">2</div>
+                                        <div class="demo-line"></div>
+                                        <div class="demo-dot" id="step-fail-3">3</div>
+                                    </div>
+                                    <div style="display:flex; flex-direction:column; gap:6px;">
+                                        <button class="btn btn-red" id="btn-inject-fail" onclick="injectDemo('failure')">Trigger Outage</button>
+                                        <button class="btn btn-primary" id="btn-fix-fail" onclick="remediateDemo('failure')" style="display:none;">Apply Remediation</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right pane: logs/incidents -->
+                        <div class="content-card" style="flex: 1;">
+                            <h3>Triggered Platform Incidents</h3>
+                            <div class="incident-list" id="incidents-history-list">
+                                <div class="loading">No active incidents reported.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. AI ASSISTANT TAB -->
+                <section id="tab-ai-assistant" class="tab-pane">
+                    <div class="split-layout" style="height: calc(100vh - 200px); max-height: 700px;">
+                        <!-- Chat screen -->
+                        <div class="content-card" style="flex: 2; display: flex; flex-direction: column; height: 100%;">
+                            <h3>SecureFlow AI Advisor (Bedrock Integration)</h3>
+                            <p class="tab-subtitle">AI-generated operational support and threat analyses. Engineer verification required.</p>
+                            
+                            <div class="chat-conversation" id="ai-chat-box">
+                                <div class="chat-message bot">
+                                    <div class="message-sender">🛡️ SecureFlow Agent</div>
+                                    <div class="message-content">Hello! I can explain security vulnerabilities, analyze recent incident logs, recommend fixes for failed policy configurations, or review SBOM dependencies. How can I assist you today?</div>
+                                </div>
+                            </div>
+                            
+                            <div class="chat-input-row">
+                                <input type="text" id="ai-chat-input" placeholder="Ask a DevSecOps query (e.g. Why is the pipeline failing?)..." onkeydown="handleAiSubmit(event)">
+                                <button class="btn btn-primary" onclick="submitAiQuery()">Query Advisor</button>
+                            </div>
+                        </div>
+
+                        <!-- Prompt ideas / instructions -->
+                        <div class="content-card" style="flex: 1;">
+                            <h3>Recommended Prompt Templates</h3>
+                            <div class="prompt-suggestions">
+                                <button class="prompt-suggest-btn" onclick="applyPrompt('Why did the deployment pipeline fail?')">
+                                    ❓ "Why did the deployment pipeline fail?"
+                                </button>
+                                <button class="prompt-suggest-btn" onclick="applyPrompt('Explain the vulnerability found in backend dependency scan.')">
+                                    ❓ "Explain the vulnerability found in backend scan."
+                                </button>
+                                <button class="prompt-suggest-btn" onclick="applyPrompt('What is the recommended fix for Kyverno container rule failures?')">
+                                    ❓ "How do I fix Kyverno rule failures?"
+                                </button>
+                                <button class="prompt-suggest-btn" onclick="applyPrompt('What security controls are currently deployed on the RDS PostgreSQL database?')">
+                                    ❓ "What are RDS PostgreSQL best practices?"
+                                </button>
+                            </div>
+
+                            <div class="alert-banner warning" style="margin-top: 30px;">
+                                ⚠️ <strong>Note:</strong> AI output provides recommendations only. The assistant is not allowed to run destructive commands automatically.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 9. ARCHITECTURE TAB -->
+                <section id="tab-architecture" class="tab-pane">
+                    <div class="split-layout">
+                        <div class="content-card" style="flex: 1.5;">
+                            <h3>Platform Component Map</h3>
+                            <p class="tab-subtitle">Click on any pipeline component below to inspect its operational role, security value, and failure modes.</p>
+                            
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Component</th>
+                                            <th>Technology</th>
+                                            <th>Role</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><strong>Semgrep SAST</strong></td>
+                                            <td>Semgrep OSS</td>
+                                            <td>Source Code Security check</td>
+                                            <td><button class="btn btn-primary" style="padding: 4px 8px; font-size:11px;" onclick="inspectArchComponent('sast')">Inspect</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Trivy SCA</strong></td>
+                                            <td>Trivy CLI</td>
+                                            <td>Open-source dependency check</td>
+                                            <td><button class="btn btn-primary" style="padding: 4px 8px; font-size:11px;" onclick="inspectArchComponent('sca')">Inspect</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Gitleaks</strong></td>
+                                            <td>Gitleaks Detector</td>
+                                            <td>Credentials leak check</td>
+                                            <td><button class="btn btn-primary" style="padding: 4px 8px; font-size:11px;" onclick="inspectArchComponent('secrets')">Inspect</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Syft</strong></td>
+                                            <td>Syft CLI</td>
+                                            <td>Software Bill of Materials (SBOM) cataloger</td>
+                                            <td><button class="btn btn-primary" style="padding: 4px 8px; font-size:11px;" onclick="inspectArchComponent('sbom')">Inspect</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Cosign</strong></td>
+                                            <td>Cosign Key</td>
+                                            <td>Supply chain container signatures</td>
+                                            <td><button class="btn btn-primary" style="padding: 4px 8px; font-size:11px;" onclick="inspectArchComponent('cosign')">Inspect</button></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Kyverno</strong></td>
+                                            <td>Kyverno Engine</td>
+                                            <td>Kubernetes Policy as Code engine</td>
+                                            <td><button class="btn btn-primary" style="padding: 4px 8px; font-size:11px;" onclick="inspectArchComponent('kyverno')">Inspect</button></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="content-card" style="flex: 1;" id="arch-details-panel">
+                            <h3>Component Details</h3>
+                            <div class="arch-details-box">
+                                <p>Select an architectural component on the left to inspect its operational role, security value, and failure modes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 10. DOCUMENTATION TAB -->
+                <section id="tab-documentation" class="tab-pane">
+                    <div class="content-card">
+                        <h3>Quick Start & Execution Guides</h3>
+                        <p class="tab-subtitle">Prerequisites and command checklists to operate the platform locally.</p>
+                        
+                        <div class="guide-tabs" style="margin-top: 16px;">
+                            <button class="guide-tab active" onclick="switchDocTab('doc-install')">Prerequisites & Run</button>
+                            <button class="guide-tab" onclick="switchDocTab('doc-scenarios')">Chaos Scenarios</button>
+                            <button class="guide-tab" onclick="switchDocTab('doc-production')">AWS RDS Details</button>
+                        </div>
+
+                        <div class="yaml-config-box" id="doc-content-box" style="height: 420px; font-size: 13px;">
+                            <!-- Content loaded dynamically -->
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Main scripts -->
+    <script src="app.js"></script>
+</body>
+</html>

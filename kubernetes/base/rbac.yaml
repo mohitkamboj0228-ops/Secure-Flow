@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: secureflow-backend-sa
+  namespace: secureflow
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: secureflow-pod-reader
+  namespace: secureflow
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: secureflow-backend-pod-read-binding
+  namespace: secureflow
+subjects:
+- kind: ServiceAccount
+  name: secureflow-backend-sa
+  namespace: secureflow
+roleRef:
+  kind: Role
+  name: secureflow-pod-reader
+  apiGroup: rbac.authorization.k8s.io

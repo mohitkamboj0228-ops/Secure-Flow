@@ -1,0 +1,32 @@
+# Dockerfile.backend
+# Build stage
+FROM node:18.18.2-alpine AS builder
+
+WORKDIR /usr/src/app
+
+COPY app/backend/package*.json ./
+
+# Install packages with clean verification
+RUN npm ci --only=production
+
+# Final run stage
+FROM node:18.18.2-alpine
+
+WORKDIR /usr/src/app
+
+# Copy production packages and build assets
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY app/backend/ .
+
+# Enforce non-root execution context
+USER node
+
+# Expose backend port
+EXPOSE 5000
+
+# Docker healthcheck using node native fetch
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "fetch('http://localhost:5000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+# Start command
+CMD ["node", "index.js"]

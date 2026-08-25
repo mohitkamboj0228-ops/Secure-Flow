@@ -1,0 +1,16 @@
+{
+  "name": "secureflow-backend",
+  "version": "1.0.0",
+  "description": "SecureFlow DevSecOps Platform Backend API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "prom-client": "^15.1.2",
+    "sqlite3": "^5.1.7"
+  }
+}

@@ -1,0 +1,38 @@
+groups:
+  - name: secureflow-alerts
+    rules:
+    - alert: HighErrorRate
+      expr: sum(rate(secureflow_http_requests_total{status=~"5.."}[2m])) / sum(rate(secureflow_http_requests_total[2m])) * 100 > 10
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: High HTTP error rate on backend service
+        description: "Backend HTTP 5xx error rate exceeded 10% over the last 2 minutes."
+
+    - alert: SlowLatency
+      expr: histogram_quantile(0.95, sum(rate(secureflow_http_request_duration_seconds_bucket[5m])) by (le)) > 0.5
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: Slow response latencies detected
+        description: "95th percentile response latency exceeded 500ms on backend service."
+
+    - alert: DatabaseUnavailable
+      expr: secureflow_database_status == 0
+      for: 30s
+      labels:
+        severity: critical
+      annotations:
+        summary: PostgreSQL Database connection lost
+        description: "Backend database connection adapter reports no active pool routes to database host."
+
+    - alert: PodCrashLooping
+      expr: rate(kube_pod_container_status_restarts_total[5m]) * 60 > 2
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: Kubernetes pod restart rate alert
+        description: "A pod in secureflow namespace is restarting more than twice per minute."

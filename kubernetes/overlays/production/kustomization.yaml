@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base
+
+patches:
+- target:
+    kind: Deployment
+    name: secureflow-backend
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 3
+- target:
+    kind: Deployment
+    name: secureflow-frontend
+  patch: |-
+    - op: replace
+      path: /spec/replicas
+      value: 2
+commonLabels:
+  env: production
+  tier: secureflow
