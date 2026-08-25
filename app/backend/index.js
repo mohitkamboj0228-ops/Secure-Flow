@@ -234,18 +234,64 @@ app.get('/api/deployments', async (req, res) => {
   try {
     const deploys = await db.query('SELECT * FROM deployments ORDER BY timestamp DESC LIMIT 5');
     
-    // Simulate Pod list for dashboard visualizer
-    const pods = [
-      { name: 'secureflow-frontend-5f4b59-xyz', status: 'Running', restarts: 0, age: '2h', cpu: '12m', memory: '45Mi' },
-      { name: 'secureflow-api-78c9d4-abc', status: 'Running', restarts: 0, age: '2h', cpu: '25m', memory: '110Mi' },
-      { name: 'secureflow-postgres-0', status: 'Running', restarts: 0, age: '2h', cpu: '5m', memory: '190Mi' }
-    ];
+    let pods = [];
+    let replicasHealthy = 0;
+    let replicasTotal = 0;
+
+    try {
+      // Check if kubectl is available and can connect to cluster
+      const stdout = execSync('kubectl get pods -n secureflow -o json', {
+        stdio: ['pipe', 'pipe', 'ignore'],
+        encoding: 'utf8',
+        timeout: 1500
+      });
+      const data = JSON.parse(stdout);
+      
+      if (data && data.items && data.items.length > 0) {
+        pods = data.items.map(pod => {
+          const status = pod.status.phase;
+          const containerStatuses = pod.status.containerStatuses || [];
+          const restarts = containerStatuses.reduce((acc, c) => acc + c.restartCount, 0);
+          
+          if (status === 'Running' || status === 'Succeeded') {
+            replicasHealthy++;
+          }
+          replicasTotal++;
+
+          // Extract resources requests
+          const container = pod.spec.containers[0] || {};
+          const resources = container.resources || {};
+          const cpu = resources.requests?.cpu || '10m';
+          const memory = resources.requests?.memory || '64Mi';
+
+          return {
+            name: pod.metadata.name,
+            status: status,
+            restarts: restarts,
+            cpu: cpu,
+            memory: memory,
+            age: pod.metadata.creationTimestamp ? Math.round((Date.now() - new Date(pod.metadata.creationTimestamp)) / 60000) + 'm' : '2h'
+          };
+        });
+      } else {
+        throw new Error('No pods found in namespace');
+      }
+    } catch (e) {
+      // Fallback to simulated pods list when Kubernetes cluster is offline
+      pods = [
+        { name: 'secureflow-frontend-5f4b59-xyz', status: 'Running', restarts: 0, age: '2h', cpu: '12m', memory: '45Mi' },
+        { name: 'secureflow-api-78c9d4-abc', status: 'Running', restarts: 0, age: '2h', cpu: '25m', memory: '110Mi' },
+        { name: 'secureflow-postgres-0', status: 'Running', restarts: 0, age: '2h', cpu: '5m', memory: '190Mi' }
+      ];
+      replicasHealthy = 3;
+      replicasTotal = 3;
+    }
 
     res.json({
       deployments: deploys,
       pods: pods,
-      replicas_healthy: 3,
-      replicas_total: 3
+      replicas_healthy: replicasHealthy,
+      replicas_total: replicasTotal
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
