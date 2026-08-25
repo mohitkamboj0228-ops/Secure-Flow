@@ -179,11 +179,55 @@ async function fetchData() {
 
     updateUI();
   } catch (err) {
-    console.warn('[API] Fetch failed. Server offline.');
+    console.warn('[API] Fetch failed. Server offline. Loading simulation fallback...');
     const connInd = document.getElementById('conn-indicator');
     const connTxt = document.getElementById('conn-text');
-    connInd.className = 'status-indicator error';
-    connTxt.innerText = 'Server offline (Demo Mode fallback)';
+    if (connInd) {
+      connInd.className = 'status-indicator warning';
+    }
+    if (connTxt) {
+      connTxt.innerText = 'Offline (Demo Simulation)';
+    }
+
+    // Set fallback simulation values
+    state.securityScore = 95;
+    state.auditBreakdown = [
+      { category: 'SAST Audit', score: 30, max: 30, note: 'Hadolint & Semgrep passed clean' },
+      { category: 'SCA Audit', score: 25, max: 30, note: 'Lodash Prototype Pollution alert' },
+      { category: 'Secrets Detection', score: 20, max: 20, note: 'Gitleaks scan passed clean' },
+      { category: 'Policy Verification', score: 20, max: 20, note: 'Kyverno validation passes' }
+    ];
+    state.deployments = [
+      { id: 1, status: 'SUCCESS', timestamp: new Date().toISOString() },
+      { id: 2, status: 'SUCCESS', timestamp: new Date().toISOString() }
+    ];
+    state.pods = [
+      { name: 'secureflow-frontend-5df4c5', status: 'Running', restarts: 0, cpu: '15m', memory: '42Mi' },
+      { name: 'secureflow-backend-8bf2da', status: 'Running', restarts: 0, cpu: '34m', memory: '110Mi' },
+      { name: 'secureflow-postgres-9fa3bb', status: 'Running', restarts: 0, cpu: '8m', memory: '190Mi' }
+    ];
+    state.reports = {
+      semgrep: { findings: [] },
+      trivy_sca: { findings: [] },
+      gitleaks: { leaks: [] },
+      trivy_container: { findings: [] },
+      sbom: {
+        packages: [
+          { name: 'express', version: '4.18.2', license: 'MIT', type: 'npm' },
+          { name: 'pg', version: '8.11.3', license: 'MIT', type: 'npm' },
+          { name: 'sqlite3', version: '5.1.6', license: 'BSD-3-Clause', type: 'npm' }
+        ]
+      }
+    };
+    state.incidents = [
+      { id: 1, severity: 'CRITICAL', title: 'Critical NPM library prototype pollution CVE', status: 'RESOLVED', description: 'Trivy SCA scan triggered alert: Found lodash@4.17.4 with Prototype Pollution severity critical. Source package lock has been flagged by gate policy.', resolution: 'Upgraded dependencies references to version 4.17.21.' }
+    ];
+    state.auditLogs = [
+      { timestamp: new Date().toISOString(), actor: 'GitHub Actions Runner', action: 'Build Pipeline', resource: 'secureflow-backend:latest', result: 'SUCCESS', severity: 'INFO' },
+      { timestamp: new Date().toISOString(), actor: 'Cosign Signer', action: 'Sign Image', resource: 'secureflow-backend:latest', result: 'SUCCESS', severity: 'INFO' }
+    ];
+
+    updateUI();
   }
 }
 
