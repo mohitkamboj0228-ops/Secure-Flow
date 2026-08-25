@@ -4,7 +4,7 @@
   "description": "SecureFlow DevSecOps Platform Backend API",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node init && node index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
